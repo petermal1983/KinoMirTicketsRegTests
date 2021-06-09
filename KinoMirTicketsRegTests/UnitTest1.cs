@@ -9,8 +9,9 @@ namespace KinoMirTicketsRegTests
     [TestFixture]
     public class Tests
     {
-        protected IWebDriver driver;
+        protected IWebDriver driver; //Создаем экземпляр IWebDriver
 
+        //XPath, используемые для поиска элементов
         private readonly By _geoChooserCloser = By.XPath("//a[@class='geo-chooser__closer' or @href='#']");
         private readonly By _cinemasPath = By.XPath("//a[@href='/cinemas']");
         private readonly By _popupCloser = By.XPath("//a[@class='popup-notification__closer']");
@@ -25,19 +26,21 @@ namespace KinoMirTicketsRegTests
         private readonly By _checkBoxSelect = By.XPath("//div[@class='input checkbox' or" +
             "                                            @class='checkbox_tick fs-12 mb-14 js-agreement-wrapper']");
         private readonly By _submitButton = By.XPath("//button[@name='submit' or @type='submit']");
-        private readonly By _ticketBoxInfo = By.XPath("//div[@class='ticket-box__info']");
         private readonly By _chosenTicketsPlaceInfo = By.XPath("//div[@class='chosen-tickets__place']");
         private readonly By _chosenCinemaName = By.XPath("//div[@class='ticket-box__title']");
+       private readonly By _ticketBoxInfo = By.XPath("//div[@class='ticket-box__info']");
+
+        public static bool flag = false; //Переменная-флаг для использовния в функции определения даты при выборе сегодняшнего или завтрашнего сеанса
 
 
 
         [SetUp]
-        public void TestInitialize()
+        public void TestInitialize() //Предварительные действия перед тестированием
         {
             driver = new OpenQA.Selenium.Chrome.ChromeDriver();
             driver.Navigate().GoToUrl("https://www.kino-mir.ru");
             driver.Manage().Window.Maximize();
-            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10); //Неявное ожидание для выполнения методов в установленный таймаут
         }
 
         [Test]
@@ -45,15 +48,18 @@ namespace KinoMirTicketsRegTests
         public void testing_Site()
         {
 
-            close_City_Chooser();
-            proceed_To_Cinemas_Schedule();
-            close_Schedule_Popup();
-            select_Available_Sinema();
-            select_if_VIP();
-            click_Agreement_Checkbox();
-            click_Sumbit_Button();
-            check_Not_Null();
-            check_Equal_Tickets_Data();
+            close_City_Chooser(); //Закрываем всплывающее окно выбора города
+            proceed_To_Cinemas_Schedule(); //Переходим ко вкладке "Расписание"
+            close_Schedule_Popup(); //Закрываем всплывающее окно рекламы фильма
+            select_Available_Sinema(); //Выбираем доступный сеанс
+            select_if_VIP(); //Выбираем, явдяется ли выбранный зал VIP-залом, а также являются ли выбранные места местами Love Seats,
+                              // т.к. в данном случае одним кликом выбираестя сразу 2 места.
+            click_Agreement_Checkbox(); //Кликаем на подтверждении "Соглашения пользователя"
+            click_Sumbit_Button(); // Нажимаем кнопку перехода к оплате
+            check_Not_Null(); // Проверяем наличие данных билета
+            check_If_True(); // Проверяем данные по заданным условиям  - текущая или завтрашняя дата, в зависимости от выбора билета,
+                             //значение флага, наличие неизменяемого текста - требует доработки.
+            
 
         }
 
@@ -78,11 +84,11 @@ namespace KinoMirTicketsRegTests
 
         public void select_Available_Sinema()
         {
-
+            
             IWebElement selectCinema = null;
             try
             {
-                selectCinema = driver.FindElement(_cinemasAvailable);
+                selectCinema = driver.FindElement(_cinemasAvailable); //Выбор сеанса сегодня, если доступен
             }
             catch (NoSuchElementException)
             {
@@ -91,13 +97,14 @@ namespace KinoMirTicketsRegTests
             if (selectCinema != null)
             {
                 selectCinema.Click();
+                flag = true;
             }
             else
             {
-                var goTomorrowCinemas = driver.FindElement(_nextDayButton);
+                var goTomorrowCinemas = driver.FindElement(_nextDayButton); //Переход в раздел сеансов на завтра
                 goTomorrowCinemas.Click();
 
-                selectCinema = driver.FindElement(_cinemasAvailable);
+                selectCinema = driver.FindElement(_cinemasAvailable); //Выбор завтрашнего сеанса
                 selectCinema.Click();
             }
         }
@@ -109,10 +116,10 @@ namespace KinoMirTicketsRegTests
 
         }
 
-        public bool check_exists_by_xpath() {
+        public bool check_If_Love_Seats() { 
             try
             {
-                driver.FindElement(_loveSeatSelector);
+                driver.FindElement(_loveSeatSelector); //Определение, является ли место Love Seat
                 return true;
             }
             catch (NoSuchElementException)
@@ -124,12 +131,12 @@ namespace KinoMirTicketsRegTests
 
         public void select_if_VIP()
         {
-            var select = driver.FindElement(_vipSelector);
+            var select = driver.FindElement(_vipSelector); //Определение, является ли место местом VIP
 
 
             if (select.Text.Contains("ВИП") ||
                 select.Text.Contains("VIP") ||
-                check_exists_by_xpath() == true)
+                check_If_Love_Seats() == true)
             {
                 select_Seats();
             }
@@ -148,7 +155,7 @@ namespace KinoMirTicketsRegTests
             {
                 var selectedCheckBox = driver.FindElement(_checkBoxSelect);
                 Actions actions = new Actions(driver);
-                actions.MoveToElement(selectedCheckBox, 10, 10).Click();
+                actions.MoveToElement(selectedCheckBox, 10, 10).Click(); //Используем данные способ, т.к. прямой Click перехватывается
                 actions.Build().Perform();
 
             }
@@ -160,10 +167,11 @@ namespace KinoMirTicketsRegTests
             Actions actions = new Actions(driver);
             actions.MoveToElement(clickSubmit, 1, 1).Click();
             actions.Build().Perform();
-            clickSubmit.Submit();
+            clickSubmit.Submit(); //Такой способ срабатывает
+            clickSubmit.Submit(); //Такой способ срабатывает
         }
 
-        public void check_Not_Null()
+        public void check_Not_Null() //Максимально простая проверка
         {
             var ticketBoxInf = driver.FindElement(_ticketBoxInfo).Text;
             Assert.IsNotNull(ticketBoxInf, "Sorry, an error occurred, your ticket info is empty.");
@@ -172,13 +180,38 @@ namespace KinoMirTicketsRegTests
 
         }
 
-        public void check_Equal_Tickets_Data()
+        public bool check_Contains_Tickets_Data() //Проверка наличия дат (сегодня, завтра) в билетах, и неизменяемого текста - требует доработки.
         {
 
+           var month_and_date_Today = DateTime.Now.ToLongDateString().Substring(0, DateTime.Now.ToLongDateString().Length - 8);
+            var month_and_date_Tomorrow = DateTime.Now.AddDays(1).ToLongDateString().Substring(0, DateTime.Now.ToLongDateString().Length - 8);
+            string[] itemsToContain = { month_and_date_Today, month_and_date_Tomorrow, ""};
 
+            if (driver.FindElement(_ticketBoxInfo).Text.Contains(month_and_date_Today) 
+                && driver.FindElement(_ticketBoxInfo).Text.Contains("зал, в формат")
+                && flag==true)
+               
+            {
+                return true;
+            }
+               else if (driver.FindElement(_ticketBoxInfo).Text.Contains(month_and_date_Tomorrow) 
+                && driver.FindElement(_ticketBoxInfo).Text.Contains("зал, в формат") 
+                && flag==false)
+            {
+                return true;
+            } 
+            else
+            {
+                return false;
+            }
+            
         }
 
 
+        public void check_If_True() {
+
+            Assert.IsTrue(check_Contains_Tickets_Data());
+        }
 
         [TearDown]
         public void TestCleanup()
@@ -186,7 +219,7 @@ namespace KinoMirTicketsRegTests
 
             try
             {
-               // driver.Quit();
+               driver.Quit();
             }
             catch (Exception ex)
             {
